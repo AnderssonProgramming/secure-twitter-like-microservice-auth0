@@ -72,21 +72,21 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    Browser -->|HTTPS| CF[CloudFront / S3\nReact SPA]
+    Browser -->|HTTPS| CF["CloudFront / S3\nReact SPA"]
 
-    CF -->|GET /stream\nno auth| StreamLambda[Stream Service\nLambda]
-    CF -->|GET /posts\nno auth| PostsLambda[Posts Service\nLambda]
-    CF -->|POST /posts\nBearer JWT| PostsLambda
-    CF -->|GET /me\nBearer JWT| UsersLambda[Users Service\nLambda]
+    CF -->|GET /stream - public| StreamLambda["Stream Service\nLambda"]
+    CF -->|GET /posts - public| PostsLambda["Posts Service\nLambda"]
+    CF -->|POST /posts + JWT| PostsLambda
+    CF -->|GET /me + JWT| UsersLambda["Users Service\nLambda"]
 
-    PostsLambda  -->|validate| Auth0[Auth0\nJWKS]
-    UsersLambda  -->|validate| Auth0
+    PostsLambda -->|validate| Auth0["Auth0\nJWKS"]
+    UsersLambda -->|validate| Auth0
 
-    PostsLambda  -->|R/W| DynamoPosts[(DynamoDB\ntwitter-posts)]
-    UsersLambda  -->|R/W| DynamoUsers[(DynamoDB\ntwitter-users)]
-    StreamLambda -->|R|   DynamoPosts
+    PostsLambda -->|R/W| DynamoPosts[("DynamoDB\ntwitter-posts")]
+    UsersLambda -->|R/W| DynamoUsers[("DynamoDB\ntwitter-users")]
+    StreamLambda -->|R| DynamoPosts
 
-    APIGW[API Gateway\nREST API] -.->|proxy| PostsLambda
+    APIGW["API Gateway\nREST API"] -.->|proxy| PostsLambda
     APIGW -.->|proxy| UsersLambda
     APIGW -.->|proxy| StreamLambda
 
