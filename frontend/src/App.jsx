@@ -23,8 +23,9 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-twitter-darker flex items-center justify-center">
-        <LoadingSpinner />
+      <div className="min-h-screen bg-twitter-darker flex flex-col items-center justify-center gap-4 text-twitter-muted">
+        <LoadingSpinner size={10} />
+        <p className="text-sm">Loading authentication...</p>
       </div>
     );
   }
