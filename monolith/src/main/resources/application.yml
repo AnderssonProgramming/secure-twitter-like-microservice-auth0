@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: twitter-monolith
+
+  # ── H2 In-Memory Database (dev) ─────────────────────────────
+  datasource:
+    url: jdbc:h2:mem:twitterdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # ── Auth0 / OAuth2 Resource Server ──────────────────────────
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Replace YOUR_AUTH0_DOMAIN with your Auth0 tenant domain
+          # e.g. dev-abc123.us.auth0.com
+          issuer-uri: https://${AUTH0_DOMAIN}/
+
+# ── Auth0 custom properties ────────────────────────────────────
+auth0:
+  # Replace with your Auth0 API audience (identifier)
+  # e.g. https://twitter-api.example.com
+  audience: ${AUTH0_AUDIENCE}
+  domain: ${AUTH0_DOMAIN}
+
+# ── SpringDoc / Swagger ────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    try-it-out-enabled: true
+
+# ── Logging ────────────────────────────────────────────────────
+logging:
+  level:
+    co.edu.escuelaing: DEBUG
+    org.springframework.security: INFO
