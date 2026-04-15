@@ -14,3 +14,7 @@ export const auth0Config = {
 };
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
+// Monolith uses /api prefix, Lambda API Gateway uses root routes.
+export const API_PREFIX = import.meta.env.VITE_API_PREFIX
+  ?? (API_BASE_URL.includes('execute-api') ? '' : '/api');

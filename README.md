@@ -698,6 +698,55 @@ In that case, the limitation is infrastructure permissions (not your frontend co
 3. Ask instructor/lab admin to grant `cloudfront:CreateDistribution` (and read/list permissions) to complete HTTPS production hosting.
 4. If permission is granted later, rerun the same CloudFront block and update Auth0 URLs with `https://YOUR_CLOUDFRONT_DOMAIN`.
 
+### DuckDNS + Reverse Proxy HTTPS (No CloudFront Permissions)
+
+Use this path if your lab blocks CloudFront creation:
+
+1. Create a small reverse proxy server (EC2, Lightsail, or any VPS) with a public IP.
+2. Point your DuckDNS subdomain to that server IP.
+3. Run Caddy on the server.
+4. Configure the proxy to:
+   - accept HTTPS on your DuckDNS domain
+   - forward traffic to your S3 website endpoint over HTTP
+   - preserve the correct Host header for S3 website routing
+5. In Auth0, use your DuckDNS HTTPS URL in:
+   - Allowed Callback URLs
+   - Allowed Logout URLs
+   - Allowed Web Origins
+
+Minimal Caddy approach:
+
+```bash
+# A) Install Caddy on the server (Ubuntu)
+sudo apt update
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install -y caddy
+
+# B) Use this Caddyfile content
+sudo tee /etc/caddy/Caddyfile > /dev/null <<EOF
+your-subdomain.duckdns.org {
+  reverse_proxy http://twitter-lite-247758310524.s3-website-us-east-1.amazonaws.com {
+    header_up Host twitter-lite-247758310524.s3-website-us-east-1.amazonaws.com
+  }
+}
+EOF
+
+# C) Restart Caddy
+sudo systemctl restart caddy
+sudo systemctl status caddy
+```
+
+D) Open security group ports 80 and 443 on the server.
+
+Then test:
+
+```bash
+curl -I https://your-subdomain.duckdns.org
+```
+
 After CloudFront status becomes `Deployed`, update Auth0 SPA settings:
 
 - Allowed Callback URLs: `https://YOUR_CLOUDFRONT_DOMAIN`
