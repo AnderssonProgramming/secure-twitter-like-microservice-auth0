@@ -310,8 +310,8 @@ VITE_API_BASE_URL=http://localhost:8080
 cd monolith
 
 # With env vars inline
-AUTH0_DOMAIN=dev-xxx.us.auth0.com \
-AUTH0_AUDIENCE=https://twitter-api.yourname.com \
+$env:AUTH0_DOMAIN="dev-xxx.us.auth0.com" \
+$env:AUTH0_AUDIENCE="https://twitter-api.yourname.com" \
 mvn spring-boot:run
 ```
 
@@ -422,16 +422,19 @@ Each produces a shaded JAR in `target/`.
 ### Step 3 — Create Lambda Functions
 
 ```bash
+# Use your current AWS account id for role ARNs
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
 # Posts service
 aws lambda create-function \
   --function-name twitter-posts-service \
   --runtime java17 \
   --handler co.edu.escuelaing.twitter.posts.PostHandler::handleRequest \
   --zip-file fileb://microservices/posts-service/target/posts-service-1.0-SNAPSHOT.jar \
-  --role arn:aws:iam::YOUR_ACCOUNT:role/lambda-dynamodb-role \
+  --role arn:aws:iam::$ACCOUNT_ID:role/LabRole \
   --timeout 30 \
   --memory-size 512 \
-  --environment "Variables={POSTS_TABLE=twitter-posts,AUTH0_DOMAIN=dev-xxx.us.auth0.com,AUTH0_AUDIENCE=https://twitter-api.yourname.com,AWS_REGION=us-east-1}"
+  --environment "Variables={POSTS_TABLE=twitter-posts,AUTH0_DOMAIN=dev-xxx.us.auth0.com,AUTH0_AUDIENCE=https://twitter-api.yourname.com}"
 
 # Users service
 aws lambda create-function \
@@ -439,10 +442,10 @@ aws lambda create-function \
   --runtime java17 \
   --handler co.edu.escuelaing.twitter.users.UserHandler::handleRequest \
   --zip-file fileb://microservices/users-service/target/users-service-1.0-SNAPSHOT.jar \
-  --role arn:aws:iam::YOUR_ACCOUNT:role/lambda-dynamodb-role \
+  --role arn:aws:iam::$ACCOUNT_ID:role/LabRole \
   --timeout 30 \
   --memory-size 512 \
-  --environment "Variables={USERS_TABLE=twitter-users,AUTH0_DOMAIN=dev-xxx.us.auth0.com,AUTH0_AUDIENCE=https://twitter-api.yourname.com,AWS_REGION=us-east-1}"
+  --environment "Variables={USERS_TABLE=twitter-users,AUTH0_DOMAIN=dev-xxx.us.auth0.com,AUTH0_AUDIENCE=https://twitter-api.yourname.com}"
 
 # Stream service
 aws lambda create-function \
@@ -450,10 +453,10 @@ aws lambda create-function \
   --runtime java17 \
   --handler co.edu.escuelaing.twitter.stream.StreamHandler::handleRequest \
   --zip-file fileb://microservices/stream-service/target/stream-service-1.0-SNAPSHOT.jar \
-  --role arn:aws:iam::YOUR_ACCOUNT:role/lambda-dynamodb-role \
+  --role arn:aws:iam::$ACCOUNT_ID:role/LabRole \
   --timeout 30 \
   --memory-size 512 \
-  --environment "Variables={POSTS_TABLE=twitter-posts,AWS_REGION=us-east-1}"
+  --environment "Variables={POSTS_TABLE=twitter-posts}"
 ```
 
 > Screenshot guide → `images/aws-02-lambda-functions.png`
@@ -514,42 +517,96 @@ The Lambda functions need a role with this policy:
 }
 ```
 
+If you are using a restricted lab account (for example AWS Academy Vocareum), you may get `AccessDenied` for `iam:CreateRole`.
+In that case, use the pre-provisioned execution role (commonly `LabRole`) instead of creating `lambda-dynamodb-role`.
+
+```bash
+# Optional: verify current identity/account
+aws sts get-caller-identity
+
+# Optional: inspect if your role already has needed permissions
+aws iam list-attached-role-policies --role-name LabRole
+aws iam list-role-policies --role-name LabRole
+
+# Re-point existing Lambda functions to LabRole
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+aws lambda update-function-configuration \
+  --function-name twitter-posts-service \
+  --role arn:aws:iam::$ACCOUNT_ID:role/LabRole
+
+aws lambda update-function-configuration \
+  --function-name twitter-users-service \
+  --role arn:aws:iam::$ACCOUNT_ID:role/LabRole
+
+aws lambda update-function-configuration \
+  --function-name twitter-stream-service \
+  --role arn:aws:iam::$ACCOUNT_ID:role/LabRole
+```
+
+If IAM inspection commands are also denied, continue with `LabRole` and validate by invoking the endpoints and checking CloudWatch logs.
+
 ---
 
 ## S3 Frontend Deployment
 
 ```bash
+# 0. Prepare production frontend environment variables
+# Create frontend/.env.production with your real values before building
+# Example:
+# VITE_AUTH0_DOMAIN=dev-xxx.us.auth0.com
+# VITE_AUTH0_CLIENT_ID=YOUR_SPA_CLIENT_ID
+# VITE_AUTH0_AUDIENCE=https://twitter-api.yourname.com
+# VITE_API_BASE_URL=https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod
+
 # 1. Build
 cd frontend
 npm run build
+test -d dist && echo "Build output found: frontend/dist"
 
-# 2. Create S3 bucket (replace with a unique name)
-aws s3 mb s3://twitter-lite-yourname --region us-east-1
+# 2. Create a globally unique bucket name
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+BUCKET_NAME="twitter-lite-$ACCOUNT_ID"
 
-# 3. Enable static website hosting
-aws s3 website s3://twitter-lite-yourname \
+# 3. Create S3 bucket
+aws s3 mb s3://$BUCKET_NAME --region us-east-1
+
+# 4. Enable static website hosting
+aws s3 website s3://$BUCKET_NAME \
   --index-document index.html \
   --error-document index.html
 
-# 4. Set bucket policy for public read
+# 5. Allow public reads at bucket level (if your account policy allows it)
+aws s3api put-public-access-block \
+  --bucket $BUCKET_NAME \
+  --public-access-block-configuration BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
+
+# 6. Set bucket policy for public read
 aws s3api put-bucket-policy \
-  --bucket twitter-lite-yourname \
+  --bucket $BUCKET_NAME \
   --policy '{
     "Version":"2012-10-17",
     "Statement":[{
       "Effect":"Allow",
       "Principal":"*",
       "Action":"s3:GetObject",
-      "Resource":"arn:aws:s3:::twitter-lite-yourname/*"
+      "Resource":"arn:aws:s3:::'"$BUCKET_NAME"'/*"
     }]
   }'
 
-# 5. Sync dist/ to S3
-aws s3 sync dist/ s3://twitter-lite-yourname --delete
+# 7. Sync frontend build output to S3
+# If you are in the frontend folder (recommended):
+aws s3 sync dist/ s3://$BUCKET_NAME --delete
 
-# 6. Your frontend URL:
-echo "http://twitter-lite-yourname.s3-website-us-east-1.amazonaws.com"
+# If you are in the repo root instead:
+# aws s3 sync frontend/dist/ s3://$BUCKET_NAME --delete
+
+# 8. Your frontend URL:
+echo "http://$BUCKET_NAME.s3-website-us-east-1.amazonaws.com"
 ```
+
+If `put-public-access-block` or `put-bucket-policy` returns `AccessDenied`, your lab account is enforcing account-level S3 public access blocks.
+In that case, keep the commands as evidence and ask your instructor/lab admin to temporarily allow static website hosting permissions.
 
 > Screenshot guide → `images/aws-04-s3-website.png`
 

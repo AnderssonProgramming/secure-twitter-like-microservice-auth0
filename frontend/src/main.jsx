@@ -6,22 +6,45 @@ import App from './App';
 import { auth0Config } from './auth0-config';
 import './index.css';
 
+function isMissingOrPlaceholder(value) {
+  return !value || value.startsWith('YOUR_') || value.includes('YOUR_');
+}
+
+const missingAuth0Config =
+  isMissingOrPlaceholder(auth0Config.domain) ||
+  isMissingOrPlaceholder(auth0Config.clientId) ||
+  isMissingOrPlaceholder(auth0Config.audience);
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Auth0Provider
-      domain={auth0Config.domain}
-      clientId={auth0Config.clientId}
-      authorizationParams={{
-        redirect_uri: window.location.origin,
-        audience: auth0Config.audience,
-        scope: 'openid profile email read:posts write:posts read:profile',
-      }}
-      cacheLocation="localstorage"
-      useRefreshTokens
-    >
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </Auth0Provider>
+    {missingAuth0Config ? (
+      <div className="min-h-screen bg-twitter-darker text-white flex items-center justify-center p-6">
+        <div className="max-w-xl rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-6">
+          <h1 className="text-xl font-semibold mb-2">Missing Auth0 frontend configuration</h1>
+          <p className="text-sm text-gray-200">
+            Set VITE_AUTH0_DOMAIN, VITE_AUTH0_CLIENT_ID, VITE_AUTH0_AUDIENCE, and VITE_API_BASE_URL before running npm run build.
+          </p>
+          <p className="text-sm text-gray-300 mt-3">
+            Then rebuild and upload frontend/dist to S3 again.
+          </p>
+        </div>
+      </div>
+    ) : (
+      <Auth0Provider
+        domain={auth0Config.domain}
+        clientId={auth0Config.clientId}
+        authorizationParams={{
+          redirect_uri: window.location.origin,
+          audience: auth0Config.audience,
+          scope: 'openid profile email read:posts write:posts read:profile',
+        }}
+        cacheLocation="localstorage"
+        useRefreshTokens
+      >
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </Auth0Provider>
+    )}
   </React.StrictMode>
 );
