@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-twitter-darker text-twitter-white antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-twitter-darker;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-twitter-border rounded-full;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-twitter-blue hover:bg-blue-400 text-white font-bold
+           py-2 px-5 rounded-full transition-colors duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-outline {
+    @apply border border-twitter-blue text-twitter-blue hover:bg-twitter-blue
+           hover:text-white font-bold py-2 px-5 rounded-full
+           transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-twitter-dark border-b border-twitter-border
+           px-4 py-3 hover:bg-[#1e2732] transition-colors duration-150;
+  }
+
+  .input-field {
+    @apply bg-transparent border-none outline-none resize-none
+           text-twitter-white placeholder-twitter-muted text-lg w-full;
+  }
+}
