@@ -76,9 +76,15 @@ public class UserHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
         // All user endpoints require authentication
         JWTClaimsSet claims;
         try {
-            String auth = Optional.ofNullable(event.getHeaders())
-                .map(h -> h.get("Authorization"))
-                .orElseThrow(() -> new SecurityException("Missing Authorization header"));
+            Map<String, String> headers = Optional.ofNullable(event.getHeaders())
+                .orElse(Collections.emptyMap());
+
+            String auth = Optional.ofNullable(headers.get("Authorization"))
+                .orElse(headers.get("authorization"));
+
+            if (auth == null || auth.isBlank()) {
+                throw new SecurityException("Missing Authorization header");
+            }
 
             String token = auth.startsWith("Bearer ") ? auth.substring(7) : auth;
             claims = jwtProcessor.process(token, null);
