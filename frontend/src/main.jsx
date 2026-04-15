@@ -15,6 +15,9 @@ const missingAuth0Config =
   isMissingOrPlaceholder(auth0Config.clientId) ||
   isMissingOrPlaceholder(auth0Config.audience);
 
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const insecureOrigin = window.location.protocol !== 'https:' && !isLocalhost;
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     {missingAuth0Config ? (
@@ -26,6 +29,18 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           </p>
           <p className="text-sm text-gray-300 mt-3">
             Then rebuild and upload frontend/dist to S3 again.
+          </p>
+        </div>
+      </div>
+    ) : insecureOrigin ? (
+      <div className="min-h-screen bg-twitter-darker text-white flex items-center justify-center p-6">
+        <div className="max-w-xl rounded-xl border border-red-500/40 bg-red-500/10 p-6">
+          <h1 className="text-xl font-semibold mb-2">Auth0 requires HTTPS in production</h1>
+          <p className="text-sm text-gray-200">
+            This URL is using HTTP, so Auth0 login cannot start. The S3 website endpoint is HTTP-only.
+          </p>
+          <p className="text-sm text-gray-300 mt-3">
+            Use localhost for development, or deploy the same S3 bucket behind CloudFront (HTTPS) and use that CloudFront URL in Auth0 callback/logout/web origin settings.
           </p>
         </div>
       </div>

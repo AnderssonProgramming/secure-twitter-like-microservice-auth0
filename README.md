@@ -608,9 +608,109 @@ echo "http://$BUCKET_NAME.s3-website-us-east-1.amazonaws.com"
 If `put-public-access-block` or `put-bucket-policy` returns `AccessDenied`, your lab account is enforcing account-level S3 public access blocks.
 In that case, keep the commands as evidence and ask your instructor/lab admin to temporarily allow static website hosting permissions.
 
+Important for Auth0: the S3 static website endpoint uses HTTP, not HTTPS. Auth0 SPA login requires a secure origin in production.
+For full login/logout flow, place S3 behind CloudFront (HTTPS) and use the CloudFront URL in Auth0 Allowed Callback URLs, Allowed Logout URLs, and Allowed Web Origins.
+
+### CloudFront HTTPS (Auth0-compatible)
+
+Use this minimal sequence after uploading `frontend/dist` to S3:
+
+```bash
+# From repo root or frontend folder
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+BUCKET_NAME="twitter-lite-$ACCOUNT_ID"
+WEBSITE_DOMAIN="$BUCKET_NAME.s3-website-us-east-1.amazonaws.com"
+
+cat > cf-config.json <<EOF
+{
+  "CallerReference": "twitterlite-$ACCOUNT_ID-$(date +%s)",
+  "Aliases": { "Quantity": 0 },
+  "Comment": "TwitterLite frontend HTTPS",
+  "DefaultRootObject": "index.html",
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "s3-website-origin",
+        "DomainName": "$WEBSITE_DOMAIN",
+        "CustomOriginConfig": {
+          "HTTPPort": 80,
+          "HTTPSPort": 443,
+          "OriginProtocolPolicy": "http-only",
+          "OriginSslProtocols": {
+            "Quantity": 1,
+            "Items": ["TLSv1.2"]
+          }
+        }
+      }
+    ]
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "s3-website-origin",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": {
+      "Quantity": 2,
+      "Items": ["GET", "HEAD"],
+      "CachedMethods": {
+        "Quantity": 2,
+        "Items": ["GET", "HEAD"]
+      }
+    },
+    "Compress": true,
+    "ForwardedValues": {
+      "QueryString": false,
+      "Cookies": { "Forward": "none" }
+    },
+    "TrustedSigners": { "Enabled": false, "Quantity": 0 },
+    "MinTTL": 0
+  },
+  "CustomErrorResponses": {
+    "Quantity": 2,
+    "Items": [
+      { "ErrorCode": 403, "ResponsePagePath": "/index.html", "ResponseCode": "200", "ErrorCachingMinTTL": 0 },
+      { "ErrorCode": 404, "ResponsePagePath": "/index.html", "ResponseCode": "200", "ErrorCachingMinTTL": 0 }
+    ]
+  },
+  "PriceClass": "PriceClass_100",
+  "Enabled": true,
+  "ViewerCertificate": { "CloudFrontDefaultCertificate": true },
+  "Restrictions": { "GeoRestriction": { "RestrictionType": "none", "Quantity": 0 } },
+  "WebACLId": "",
+  "HttpVersion": "http2",
+  "IsIPV6Enabled": true
+}
+EOF
+
+CF_DOMAIN=$(aws cloudfront create-distribution \
+  --distribution-config file://cf-config.json \
+  --query 'Distribution.DomainName' \
+  --output text)
+
+echo "CloudFront URL: https://$CF_DOMAIN"
+echo "Status check: aws cloudfront list-distributions --query \"DistributionList.Items[?DomainName=='$CF_DOMAIN'].Status\" --output text"
+```
+
+If `create-distribution` returns `AccessDenied`, your lab role does not allow CloudFront.
+In that case, the limitation is infrastructure permissions (not your frontend code). Use this fallback:
+
+1. Keep S3 website deployment as static-hosting evidence.
+2. Demonstrate full Auth0 login flow on `http://localhost:3000` (localhost is allowed for SPA dev).
+3. Ask instructor/lab admin to grant `cloudfront:CreateDistribution` (and read/list permissions) to complete HTTPS production hosting.
+4. If permission is granted later, rerun the same CloudFront block and update Auth0 URLs with `https://YOUR_CLOUDFRONT_DOMAIN`.
+
+After CloudFront status becomes `Deployed`, update Auth0 SPA settings:
+
+- Allowed Callback URLs: `https://YOUR_CLOUDFRONT_DOMAIN`
+- Allowed Logout URLs: `https://YOUR_CLOUDFRONT_DOMAIN`
+- Allowed Web Origins: `https://YOUR_CLOUDFRONT_DOMAIN`
+
+Then rebuild frontend with production env and set:
+
+- `VITE_API_BASE_URL=https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod`
+
 > Screenshot guide → `images/aws-04-s3-website.png`
 
-**Update Auth0 allowed URLs** to include the S3 URL, then update `VITE_AUTH0_CLIENT_ID` and `VITE_API_BASE_URL` in `.env` with your API Gateway URL before rebuilding.
+**Update Auth0 allowed URLs** with localhost and/or CloudFront HTTPS URL (not S3 website HTTP) and then update `VITE_AUTH0_CLIENT_ID` and `VITE_API_BASE_URL` before rebuilding.
 
 ---
 
