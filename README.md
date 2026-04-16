@@ -327,8 +327,6 @@ To test protected endpoints directly in Swagger:
 3. Click **Authorize → Close**.
 4. Try `POST /api/posts` — it will now include your Bearer token.
 
-> Screenshot guide → `images/swagger-01-authorize.png`, `images/swagger-02-post.png`
-
 ### H2 Console (dev)
 
 `http://localhost:8080/h2-console` — JDBC URL: `jdbc:h2:mem:twitterdb`
@@ -346,8 +344,6 @@ Expected output:
 [INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
 [INFO] BUILD SUCCESS
 ```
-
-> Screenshot guide → `images/tests-01-passing.png`
 
 ---
 
@@ -407,8 +403,6 @@ aws dynamodb create-table \
   --region us-east-1
 ```
 
-> Screenshot guide → `images/aws-01-dynamodb-tables.png`
-
 ### Step 2 — Build Fat JARs
 
 ```bash
@@ -459,8 +453,6 @@ aws lambda create-function \
   --environment "Variables={POSTS_TABLE=twitter-posts}"
 ```
 
-> Screenshot guide → `images/aws-02-lambda-functions.png`
-
 ### Step 4 — Create API Gateway
 
 ```bash
@@ -479,8 +471,6 @@ Then wire up the routes in the AWS Console:
 - `GET /me`     → `twitter-users-service`
 
 Enable **CORS** on each resource and deploy to stage `prod`.
-
-> Screenshot guide → `images/aws-03-api-gateway.png`
 
 ### Step 5 — IAM Role for Lambda
 
@@ -757,8 +747,6 @@ Then rebuild frontend with production env and set:
 
 - `VITE_API_BASE_URL=https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod`
 
-> Screenshot guide → `images/aws-04-s3-website.png`
-
 **Update Auth0 allowed URLs** with localhost and/or CloudFront HTTPS URL (not S3 website HTTP) and then update `VITE_AUTH0_CLIENT_ID` and `VITE_API_BASE_URL` before rebuilding.
 
 ---
@@ -870,8 +858,6 @@ mvn test
 ---
 
 ## Evidence Gallery
-
-> Place your screenshots inside the `images/` directory using the names below.
 
 | # | Screenshot | Description | File |
 |---|---|---|---|
