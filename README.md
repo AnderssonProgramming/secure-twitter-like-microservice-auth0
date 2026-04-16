@@ -920,7 +920,7 @@ mvn test
 10. Live frontend on S3 — repeat login → post → stream → profile
 11. Security demo — try `POST /api/posts` without token → 401 and summary.
 
-**Video link:** `[📹 TwitterLite Demo](https://youtu.be/m1zBxq9heyA)`
+**Video link: 📹** https://youtu.be/m1zBxq9heyA
 
 ## Architecture Evolution
 
