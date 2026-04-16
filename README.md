@@ -894,12 +894,15 @@ mvn test
 | 17 | S3 bucket website | Static hosting enabled | [images/aws-05-s3-bucket.png](images/aws-05-s3-bucket.png) |
 | 18 | Live frontend on S3 | App running from S3 URL | [images/aws-06-frontend-live.png](images/aws-06-frontend-live.png) |
 | 19 | Profile page | /api/me response displayed | [images/frontend-05-profile.png](images/frontend-05-profile.png) |
-| 20 | 401 on protected endpoint | POST without token returns 401 | [images/security-01-unauthorized.png](images/security-01-unauthorized.png) |
+| 20 | 200 on protected endpoint | POST with GitHub account token returns 200 | [images/security-01-authorized.png](images/security-01-authorized.png) |
 
 ### Visual Highlights
 
-#### Frontend — Login Screen
-![Frontend Login](images/frontend-01-login.png)
+#### Frontend — Login Screen - Local
+![Frontend Login Local](images/frontend-01-login.png)
+
+#### Frontend — Login Screen - AWS
+![Frontend Login AWS](images/aws-06-frontend-live.png)
 
 #### Frontend — Authenticated + Stream
 ![Stream](images/frontend-04-stream.png)
@@ -917,25 +920,21 @@ mvn test
 
 ## Video Walkthrough
 
-> Record a 5–8 minute screen capture following this script and link it here.
+**Recording flow:**
 
-**Suggested recording flow:**
+1. Architecture overview — show the README diagram, explain monolith vs microservices
+2. Auth0 configuration — show the API and SPA app in the Auth0 dashboard
+3. Start the Spring Boot monolith locally (`mvn spring-boot:run`)
+4. Open Swagger UI — demonstrate all endpoints, authorize with JWT
+5. Open the React frontend — login with Auth0 (Universal Login redirect)
+6. Create a post — show character counter, post appears in stream
+7. Visit `/profile` — show `/api/me` response with Auth0 sub
+8. Run `mvn test` — show BUILD SUCCESS
+9. AWS console — show DynamoDB tables, Lambda functions, API Gateway
+10. Live frontend on S3 — repeat login → post → stream → profile
+11. Security demo — try `POST /api/posts` without token → 401 and summary.
 
-1. **(0:00)** Architecture overview — show the README diagram, explain monolith vs microservices
-2. **(0:45)** Auth0 configuration — show the API and SPA app in the Auth0 dashboard
-3. **(1:30)** Start the Spring Boot monolith locally (`mvn spring-boot:run`)
-4. **(2:00)** Open Swagger UI — demonstrate all endpoints, authorize with JWT
-5. **(2:45)** Open the React frontend — login with Auth0 (Universal Login redirect)
-6. **(3:15)** Create a post — show character counter, post appears in stream
-7. **(3:45)** Visit `/profile` — show `/api/me` response with Auth0 sub
-8. **(4:15)** Run `mvn test` — show BUILD SUCCESS
-9. **(4:45)** AWS console — show DynamoDB tables, Lambda functions, API Gateway
-10. **(5:30)** Live frontend on S3 — repeat login → post → stream → profile
-11. **(6:30)** Security demo — try `POST /api/posts` without token → 401
-
-**Video link:** `[📹 TwitterLite Demo](YOUR_VIDEO_URL)`
-
----
+**Video link:** `[📹 TwitterLite Demo](https://youtu.be/m1zBxq9heyA)`
 
 ## Architecture Evolution
 
@@ -980,11 +979,16 @@ timeline
 
 ---
 
-## Authors and Credits
+## Team and Credits
+
+| Role | Name | GitHub |
+|---|---|---|
+| Team Member | Andersson David Sánchez Méndez | [AnderssonProgramming](https://github.com/AnderssonProgramming) |
+| Team Member | Cristian Santiago Pedraza Rodríguez | [cris-eci](https://github.com/cris-eci) |
+| Team Member | Jeisson David Sánchez Gómez | [JeissonS02](https://github.com/JeissonS02) |
 
 | Field | Value |
 |---|---|
-| Student | Andersson David Sanchez Mendez |
 | Course | Enterprise Architectures — Microservices |
 | Institution | Escuela Colombiana de Ingeniería Julio Garavito |
 | Instructor | Luis Daniel Benavides Navarro |
